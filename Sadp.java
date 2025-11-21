@@ -1,1631 +1,582 @@
-// 1. Write a JAVA Program to implement built-in support (java.util.Observable) Weather station with members temperature, humidity, pressure and methods mesurmentsChanged(), setMesurment(), getTemperature(), getHumidity(), getPressure().
-
-
-Observer.java
-public interface Observer {
- public void update(float temp, float humidity, float pressure);
-}
-
-Subject.java
-public interface Subject {
- public void registerObserver(Observer o);
- public void removeObserver(Observer o);
-public void notifyObservers();
-}
-
-WeatherData.java
-public class WeatherData implements Subject {
- private ArrayList<Observer> observers;
- private float temperature;
- private float humidity;
- private float pressure;
- 
- public WeatherData() {
-  observers = new ArrayList<>();
- }
- 
- public void registerObserver(Observer o) {
-  observers.add(o);
- }
- 
- public void removeObserver(Observer o) {
-  int i = observers.indexOf(o);
-  if (i >= 0) {
-   observers.remove(i);
-  }
- }
- 
- public void notifyObservers() {
-  for (int i = 0; i < observers.size(); i++) {
-   Observer observer = (Observer)observers.get(i);
-   observer.update(temperature, humidity, pressure);
-  }
- }
- 
- public void measurementsChanged() {
-  notifyObservers();
- }
- 
- public void setMeasurements(float temperature, float humidity, float pressure) {
-  this.temperature = temperature;
-  this.humidity = humidity;
-  this.pressure = pressure;
-  measurementsChanged();
- }
- 
- public float getTemperature() {
-  return temperature;
- }
- 
- public float getHumidity() {
-  return humidity;
- }
- 
- public float getPressure() {
-  return pressure;
- }
-}
-
-ForecastDisplay.java
-public class ForecastDisplay implements Observer, DisplayElement {
-private float currentPressure = 29.92f;  
-private float lastPressure;
-private WeatherData weatherData;
-
- public ForecastDisplay(WeatherData weatherData) {
-  this.weatherData = weatherData;
-  weatherData.registerObserver(this);
- }
-
- public void update(float temp, float humidity, float pressure) {
-                lastPressure = currentPressure;
-  currentPressure = pressure;
-
-  display();
- }
-
- public void display() {
-  System.out.print("Forecast: ");
-  if (currentPressure > lastPressure) {
-   System.out.println("Improving weather on the way!");
-  } else if (currentPressure == lastPressure) {
-   System.out.println("More of the same");
-  } else if (currentPressure < lastPressure) {
-   System.out.println("Watch out for cooler, rainy weather");
-  }
- }
-}
-
-HeatIndexDisplay.java
-public class HeatIndexDisplay implements Observer, DisplayElement {
- float heatIndex = 0.0f;
- private WeatherData weatherData;
-
- public HeatIndexDisplay(WeatherData weatherData) {
-  this.weatherData = weatherData;
-  weatherData.registerObserver(this);
- }
-
- public void update(float t, float rh, float pressure) {
-  heatIndex = computeHeatIndex(t, rh);
-  display();
- }
- 
- private float computeHeatIndex(float t, float rh) {
-  float index = (float)((16.923 + (0.185212 * t) + (5.37941 * rh) - (0.100254 * t * rh) 
-   + (0.00941695 * (t * t)) + (0.00728898 * (rh * rh)) 
-   + (0.000345372 * (t * t * rh)) - (0.000814971 * (t * rh * rh)) +
-   (0.0000102102 * (t * t * rh * rh)) - (0.000038646 * (t * t * t)) + (0.0000291583 * 
-   (rh * rh * rh)) + (0.00000142721 * (t * t * t * rh)) + 
-   (0.000000197483 * (t * rh * rh * rh)) - (0.0000000218429 * (t * t * t * rh * rh)) +
-   0.000000000843296 * (t * t * rh * rh * rh)) -
-   (0.0000000000481975 * (t * t * t * rh * rh * rh)));
-  return index;
- }
-
- public void display() {
-  System.out.println("Heat index is " + heatIndex);
- }
-}
-
-StatisticsDisplay.java
-public class StatisticsDisplay implements Observer, DisplayElement {
- private float maxTemp = 0.0f;
- private float minTemp = 200;
- private float tempSum= 0.0f;
- private int numReadings;
- private WeatherData weatherData;
-
- public StatisticsDisplay(WeatherData weatherData) {
-  this.weatherData = weatherData;
-  weatherData.registerObserver(this);
- }
-
- public void update(float temp, float humidity, float pressure) {
-  tempSum += temp;
-  numReadings++;
-
-  if (temp > maxTemp) {
-   maxTemp = temp;
-  }
- 
-  if (temp < minTemp) {
-   minTemp = temp;
-  }
-
-  display();
- }
-
- public void display() {
-  System.out.println("Avg/Max/Min temperature = " + (tempSum / numReadings)
-   + "/" + maxTemp + "/" + minTemp);
- }
-}
-
-CurrentConditionsDisplay.java
-public class CurrentConditionsDisplay implements Observer, DisplayElement {
- private float temperature;
- private float humidity;
- private Subject weatherData;
- 
- public CurrentConditionsDisplay(Subject weatherData) {
-  this.weatherData = weatherData;
-  weatherData.registerObserver(this);
- }
- 
- public void update(float temperature, float humidity, float pressure) {
-  this.temperature = temperature;
-  this.humidity = humidity;
-  display();
- }
- 
- public void display() {
-  System.out.println("Current conditions: " + temperature 
-   + "F degrees and " + humidity + "% humidity");
- }
-}
-
-WeatherStation.java
-public class WeatherStation {
-
- public static void main(String[] args) {
-  WeatherData weatherData = new WeatherData();
- 
-  CurrentConditionsDisplay currentDisplay = 
-   new CurrentConditionsDisplay(weatherData);
-  StatisticsDisplay statisticsDisplay = new StatisticsDisplay(weatherData);
-  ForecastDisplay forecastDisplay = new ForecastDisplay(weatherData);
-
-  weatherData.setMeasurements(80, 65, 30.4f);
-  weatherData.setMeasurements(82, 70, 29.2f);
-  weatherData.setMeasurements(78, 90, 29.2f);
- }
-}
-
-
-
-
-// 2.Write a Java Program to implement I/O Decorator for converting uppercase letters to lower case letters.
-
-LowerCaseInputStream.java
-import java.io.*;
-import java.util.*;
-//extend FilterInputStream which is abstract decorator for all InputStreams
-class LowerCaseInputStream extends FilterInputStream 
-{
-	public LowerCaseInputStream(InputStream in) 
-	{
-		super(in);
-	}
-	public int read() throws IOException 
-	{
-		int c=super.read();
-		return (c==-1?c:Character.toLowerCase((char)c));
-	}
-	public int read(byte[] b,int offset,int len) throws IOException 
-	{
-		int result =super.read(b,offset,len);
-		for (int i=offset;i<offset+result;i++) 
-		{
-			b[i]=(byte)Character.toLowerCase((char)b[i]);
-		}
-		return result;
-	}
-}
-
-InputTest.java
-class InputTest
-{
-	public static void main(String[] args) throws IOException
-	{
-	int c;
-	try 
-	{
-		//set up the FileInputStream and decorate it,first with a BufferedInputStream and then our 
-    	//new LowerCaseInputStream filter
-		InputStream in =new LowerCaseInputStream(new BufferedInputStream(new FileInputStream("a.txt")));
-		// Read the charater until end of file and print it
-		while((c = in.read()) >= 0) 
-		{
-			System.out.print((char)c);
-		}
-		
-		in.close();
-	} 
-	catch(IOException e) 
-	{
-		e.printStackTrace();
-	}
-	}
-}
-
-
-
-// 3.Write a Java Program to implement Factory method for Pizza Store with createPizza(), orederPizza(), prepare(), Bake(), cut(), box(). Use this to create variety of pizza’s like NyStyleCheesePizza, ChicagoStyleCheesePizza etc.
-
-PizzaStore.java
-public abstract class PizzaStore{
-abstract Pizza createPizza(String item);
-public Pizza orderPizza(String type){
-    Pizza pizza=createPizza(type);
-System.out.println("---Making a"+pizza.getName()+"---");
-pizza.prepare();
-pizza.bake();
-pizza.cut();
-pizza.box();
-return pizza;
-}
-}
-
-ChicagoPizzaStore.java
-public class ChicagoPizzaStore extends PizzaStore {
-
-    Pizza createPizza(String item) {
-            if (item.equals("cheese")) {
-                    return new ChicagoStyleCheesePizza();
-            } else if (item.equals("veggie")) {
-                    return new ChicagoStyleVeggiePizza();
-            } else if (item.equals("clam")) {
-                    return new ChicagoStyleClamPizza();
-            } else if (item.equals("pepperoni")) {
-                    return new ChicagoStylePepperoniPizza();
-            } else return null;
-    }
-}
-
-NYPizzaStore.java
-public class NYPizzaStore extends PizzaStore{
-Pizza createPizza(String item){
-if(item.equals("cheese")){
-return new; 
-NYStyleCheesePizza();
-}else if(item.equals("veggie")){
-return new;
-NYStyleCheesePizza();
-}else if(item.equals("clam")){
-return new;
-NYStyleCheesePizza();
-}else if(item.equals("pepperoni")){
-return new;
-NYStyleCheesePizza();
-}else return null;
-}
-}
-
-
-Pizza.java
-import java.util.ArrayList;
-
-public abstract class Pizza {
-    String name;
-    String dough;
-    String sauce;
-    ArrayList<String> toppings = new ArrayList<String>();
-
-    void prepare() {
-        System.out.println("Prepare " + name);
-        System.out.println("Tossing dough...");
-        System.out.println("Adding sauce...");
-        System.out.println("Adding toppings: ");
-        for (String topping : toppings) {
-            System.out.println("   " + topping);
-        }
-    }
-
-    void bake() {
-        System.out.println("Bake for 25 minutes at 350");
-    }
-
-    void cut() {
-        System.out.println("Cut the pizza into diagonal slices");
-    }
-
-    void box() {
-        System.out.println("Place pizza in official PizzaStore box");
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String toString() {
-        StringBuffer display = new StringBuffer();
-        display.append("---- " + name + " ----\n");
-        display.append(dough + "\n");
-        display.append(sauce + "\n");
-        for (String topping : toppings) {
-            display.append(topping + "\n");
-        }
-        return display.toString();
-    }
-}
-
-NYStyleCheesePizza.java
-public class NYStyleCheesePizza extends Pizza {
-
-    public NYStyleCheesePizza() {
-        name = "NY Style Sauce and Cheese Pizza";
-        dough = "Thin Crust Dough";
-        sauce = "Marinara Sauce";
-
-        toppings.add("Grated Reggiano Cheese");
-    }
-}
-
-NYStyleClamPizza.java
-public class NYStyleClamPizza extends Pizza {
-
-    public NYStyleClamPizza() {
-        name = "NY Style Clam Pizza";
-        dough = "Thin Crust Dough";
-        sauce = "Marinara Sauce";
-
-        toppings.add("Grated Reggiano Cheese");
-        toppings.add("Fresh Clams from Long Island Sound");
-    }
-}
-
-ChicagoStylePepperoniPizza.java
-public class ChicagoStylePepperoniPizza extends Pizza {
-    public ChicagoStylePepperoniPizza() {
-        name = "Chicago Style Pepperoni Pizza";
-        dough = "Extra Thick Crust Dough";
-        sauce = "Plum Tomato Sauce";
-
-        toppings.add("Shredded Mozzarella Cheese");
-        toppings.add("Black Olives");
-        toppings.add("Spinach");
-        toppings.add("Eggplant");
-        toppings.add("Sliced Pepperoni");
-    }
-
-    void cut() {
-        System.out.println("Cutting the pizza into square slices");
-    }
-}
-
-ChicagoStyleVeggiePizza.java
-public class ChicagoStyleVeggiePizza extends Pizza {
-    public ChicagoStyleVeggiePizza() {
-        name = "Chicago Deep Dish Veggie Pizza";
-        dough = "Extra Thick Crust Dough";
-        sauce = "Plum Tomato Sauce";
-
-        toppings.add("Shredded Mozzarella Cheese");
-        toppings.add("Black Olives");
-        toppings.add("Spinach");
-        toppings.add("Eggplant");
-    }
-
-    void cut() {
-        System.out.println("Cutting the pizza into square slices");
-    }
-}
-
-ChicagoStyleClamPizza.java
-public class ChicagoStyleClamPizza extends Pizza {
-    public ChicagoStyleClamPizza() {
-        name = "Chicago Deep Dish Veggie Pizza";
-        dough = "Extra Thick Crust Dough";
-        sauce = "Plum Tomato Sauce";
-
-        toppings.add("Shredded Mozzarella Cheese");
-        toppings.add("Black Olives");
-        toppings.add("Clams");
-        toppings.add("Jalapeons");
-    }
-
-    void cut() {
-        System.out.println("Cutting the pizza into square slices");
-    }
-}
-
-ChicagoStyleCheesePizza.java
-public class ChicagoStyleCheesePizza extends Pizza {
-    public ChicagoStyleCheesePizza() {
-        name = "Chicago Deep Dish Veggie Pizza";
-        dough = "Extra Thick Crust Dough";
-        sauce = "Plum Tomato Sauce";
-
-        toppings.add("Shredded Mozzarella Cheese");
-        toppings.add("Black Olives");
-        toppings.add("Mayo");
-        toppings.add("Cheddar");
-    }
-
-    void cut() {
-        System.out.println("Cutting the pizza into square slices");
-    }
-}
-
-PizzaTestDrive.java
-public class PizzaTestDrive {
-
-    public static void main(String[] args) {
-        PizzaStore nyStore = new NYPizzaStore();
-        PizzaStore chicagoStore = new ChicagoPizzaStore();
-
-        Pizza pizza = nyStore.orderPizza("cheese");
-        System.out.println("First order was a " + pizza.getName() + "\n");
-
-        pizza = nyStore.orderPizza("cheese");
-        System.out.println("Second order was a " + pizza.getName() + "\n");
-    }
-}
-
-
-
-
-
-
-
-// 4.Write a Java Program to implement Singleton pattern for multithreading
-
-
-
-
-Singleton.java
-public class Singleton{
-	private static Singleton uniqueInstance;
-	
-	private Singleton() {
-        
-		System.out.println("Instance has been Created");
-	}
-	
-	public static Singleton getInstance() {
-		if(uniqueInstance== null) {
-			synchronized (Singleton.class) {
-				
-				if(uniqueInstance == null) {
-					uniqueInstance=new Singleton();
-				}
-			}
-			
-		}
-		return uniqueInstance;
-	}
-	
-	public static void main(String[] args) {
-		
-		Thread t1= new Thread(new Runnable() {
-			public void run() {
-				Singleton obj=Singleton.getInstance();
-			}
-		});
-		
-		Thread t2=new Thread(new Runnable() {
-			public void run() {
-				Singleton obj=Singleton.getInstance();
-			}
-		});
-		
-		t1.start();
-		t2.start();
-	}
-}
-
-
-
-
-
-// 5.Write a Java Program to implement command pattern to test Remote Control.
-
-
-Command.java
-interface Command{
-public void execute();
-}
-
-Light.java
-public class Light {
-        public void on()
-        {
-            System.out.println("Light is on");
-        }
-        public void off()
-        {
-            System.out.println("Light is off");
-        }
-    }
-    class LightOnCommand implements Command
-    {
-        Light light;
-     
-        // The constructor is passed the light it
-        // is going to control.
-        public LightOnCommand(Light light)
-        {
-           this.light = light;
-        }
-        public void execute()
-        {
-           light.on();
-        }    
-}
-
-LightOffCommand.java
-public class LightOffCommand implements Command
-{
-    Light light;
-    public LightOffCommand(Light light)
-    {
-        this.light = light;
-    }
-    public void execute()
-    {
-         light.off();
-    }
-}
-
-LightOnCommand.java
-public class LightOnCommand implements Command
-{
-    Light light;
- 
-    // The constructor is passed the light it
-    // is going to control.
-    public LightOnCommand(Light light)
-    {
-       this.light = light;
-    }
-    public void execute()
-    {
-       light.on();
-    }
-}
-
-Stereo.java
-public class Stereo {
-    public void on()
-    {
-        System.out.println("Stereo is on");
-    }
-    public void off()
-    {
-        System.out.println("Stereo is off");
-    }
-    public void setCD()
-    {
-        System.out.println("Stereo is set " +
-                           "for CD input");
-    }
-    public void setDVD()
-    {
-        System.out.println("Stereo is set"+
-                         " for DVD input");
-    }
-    public void setRadio()
-    {
-        System.out.println("Stereo is set" +
-                           " for Radio");
-    }
-    public void setVolume(int volume)
-    {
-       // code to set the volume
-       System.out.println("Stereo volume set"
-                          + " to " + volume);
-    }
-}
-
-StereoOffCommand.java
-public class StereoOffCommand implements Command
-{
-    Stereo stereo;
-    public StereoOffCommand(Stereo stereo)
-    {
-        this.stereo = stereo;
-    }
-    public void execute()
-    {
-       stereo.off();
-    }
-}
-
-StereoOnWithCDCommand.java
-public class StereoOnWithCDCommand implements Command
-{
-     Stereo stereo;
-     public StereoOnWithCDCommand(Stereo stereo)
-     {
-         this.stereo = stereo;
-     }
-     public void execute()
-     {
-         stereo.on();
-         stereo.setCD();
-         stereo.setVolume(11);
-     }
-}
-
-SimpleRemoteControl.java
-public class SimpleRemoteControl
-{
-    Command slot;  // only one button
- 
-    public SimpleRemoteControl()
-    {
-    }
- 
-    public void setCommand(Command command)
-    {
-        // set the command the remote will
-        // execute
-        slot = command;
-    }
- 
-    public void buttonWasPressed()
-    {
-        slot.execute();
-    }
-}
-
-RemoteControlTest.java
-public class RemoteControlTest
-{
-    public static void main(String[] args)
-    {
-        SimpleRemoteControl remote =
-                  new SimpleRemoteControl();
-        Light light = new Light();
-        Stereo stereo = new Stereo();
- 
-        // we can change command dynamically
-        remote.setCommand(new
-                    LightOnCommand(light));
-        remote.buttonWasPressed();
-        remote.setCommand(new
-                StereoOnWithCDCommand(stereo));
-        remote.buttonWasPressed();
-        remote.setCommand(new
-                   StereoOffCommand(stereo));
-        remote.buttonWasPressed();
-     }
-  }
-
-
-
-// 6.Write a Java Program to implement undo command to test Ceiling fan.
-
-
-
-Command.java
-interface Command {
-        public void execute();
-        public void undo();
-}
-
-NoCommand.java
-class NoCommand implements Command {
-        public void execute() { }
-        public void undo() { }
-}
-
-CeilingFan.java
-class CeilingFan {
-        public static final int HIGH = 3;
-        public static final int MEDIUM = 2;
-        public static final int LOW = 1;
-        public static final int OFF = 0;
-        String location;
-        int speed;
-
-        public CeilingFan(String location) {
-                this.location = location;
-                speed = OFF;
-        }
-
-        public void high() {
-                speed = HIGH;
-                System.out.println(location + " ceiling fan is on high");
-        }
-
-        public void medium() {
-                speed = MEDIUM;
-                System.out.println(location + " ceiling fan is on medium");
-        }
-
-        public void low() {
-                speed = LOW;
-                System.out.println(location + " ceiling fan is on low");
-        }
-
-        public void off() {
-                speed = OFF;
-                System.out.println(location + " ceiling fan is off");
-        }
-  
-        public int getSpeed() {
-                return speed;
-        }
-}
-
-CeilingFanHighCommand.java
-class CeilingFanHighCommand implements Command {
-        CeilingFan ceilingFan;
-        int prevSpeed;
-
-        public CeilingFanHighCommand(CeilingFan ceilingFan) {
-                this.ceilingFan = ceilingFan;
-        }
- 
-        public void execute() {
-                prevSpeed = ceilingFan.getSpeed();
-                ceilingFan.high();
-        }
- 
-        public void undo() {
-                if (prevSpeed == CeilingFan.HIGH) {
-                        ceilingFan.high();
-                } else if (prevSpeed == CeilingFan.MEDIUM) {
-                        ceilingFan.medium();
-                } else if (prevSpeed == CeilingFan.LOW) {
-                        ceilingFan.low();
-                } else if (prevSpeed == CeilingFan.OFF) {
-                        ceilingFan.off();
-                }
-        }
-}
-
-CeilingFanLowCommand.java
-class CeilingFanLowCommand implements Command {
-        CeilingFan ceilingFan;
-        int prevSpeed;
-
-        public CeilingFanLowCommand(CeilingFan ceilingFan) {
-                this.ceilingFan = ceilingFan;
-        }
- 
-        public void execute() {
-                prevSpeed = ceilingFan.getSpeed();
-                ceilingFan.low();
-        }
-
-        public void undo() {
-                if (prevSpeed == CeilingFan.HIGH) {
-                        ceilingFan.high();
-                } else if (prevSpeed == CeilingFan.MEDIUM) {
-                        ceilingFan.medium();
-                } else if (prevSpeed == CeilingFan.LOW) {
-                        ceilingFan.low();
-                } else if (prevSpeed == CeilingFan.OFF) {
-                        ceilingFan.off();
-                }
-        }
-}
-
-CeilingFanMediumCommand.java
-class CeilingFanMediumCommand implements Command {
-        CeilingFan ceilingFan;
-        int prevSpeed;
-
-        public CeilingFanMediumCommand(CeilingFan ceilingFan) {
-                this.ceilingFan = ceilingFan;
-        }
-
-        public void execute() {
-                prevSpeed = ceilingFan.getSpeed();
-                ceilingFan.medium();
-        }
-
-        public void undo() {
-                if (prevSpeed == CeilingFan.HIGH) {
-                        ceilingFan.high();
-                } else if (prevSpeed == CeilingFan.MEDIUM) {
-                        ceilingFan.medium();
-                } else if (prevSpeed == CeilingFan.LOW) {
-                        ceilingFan.low();
-                } else if (prevSpeed == CeilingFan.OFF) {
-                        ceilingFan.off();
-                }
-        }
-}
-
-CeilingFanOffCommand.java
-class CeilingFanOffCommand implements Command {
-        CeilingFan ceilingFan;
-        int prevSpeed;
-
-        public CeilingFanOffCommand(CeilingFan ceilingFan) {
-                this.ceilingFan = ceilingFan;
-        }
- 
-        public void execute() {
-                prevSpeed = ceilingFan.getSpeed();
-                ceilingFan.off();
-        }
- 
-        public void undo() {
-                if (prevSpeed == CeilingFan.HIGH) {
-                        ceilingFan.high();
-                } else if (prevSpeed == CeilingFan.MEDIUM) {
-                        ceilingFan.medium();
-                } else if (prevSpeed == CeilingFan.LOW) {
-                        ceilingFan.low();
-                } else if (prevSpeed == CeilingFan.OFF) {
-                        ceilingFan.off();
-                }
-        }
-}
-
-RemoteControlWithUndo.java
-class RemoteControlWithUndo {
-        Command[] onCommands;
-        Command[] offCommands;
-        Command undoCommand;
-
-        public RemoteControlWithUndo() {
-                onCommands = new Command[7];
-                offCommands = new Command[7];
-
-                Command noCommand = new NoCommand();
-                for(int i=0;i<7;i++) {
-                        onCommands[i] = noCommand;
-                        offCommands[i] = noCommand;
-                }
-                undoCommand = noCommand;
-        }
-  
-        public void setCommand(int slot, Command onCommand, Command offCommand) {
-                onCommands[slot] = onCommand;
-                offCommands[slot] = offCommand;
-        }
- 
-        public void onButtonWasPushed(int slot) {
-                onCommands[slot].execute();
-                undoCommand = onCommands[slot];
-        }
- 
-        public void offButtonWasPushed(int slot) {
-                offCommands[slot].execute();
-                undoCommand = offCommands[slot];
-        }
- 
-        public void undoButtonWasPushed() {
-                undoCommand.undo();
-        }
-	
-	  public String toString() {
-                StringBuffer stringBuff = new StringBuffer();
-                stringBuff.append("\n------ Remote Control -------\n");
-                for (int i = 0; i < onCommands.length; i++) {
-                        stringBuff.append("[slot " + i + "] " + onCommands[i].getClass().getName()
-                                + "    " + offCommands[i].getClass().getName() + "\n");
-                }
-                stringBuff.append("[undo] " + undoCommand.getClass().getName() + "\n");
-                return stringBuff.toString();
-        }
-}
-
-
-RemoteLoader.java
-class RemoteLoader {
-
-        public static void main(String[] args) {
-                RemoteControlWithUndo remoteControl = new RemoteControlWithUndo();
-
-                CeilingFan ceilingFan = new CeilingFan("Living Room");
-   
-                CeilingFanMediumCommand ceilingFanMedium = new CeilingFanMediumCommand(ceilingFan);
-                CeilingFanHighCommand ceilingFanHigh = new CeilingFanHighCommand(ceilingFan);
-                CeilingFanOffCommand ceilingFanOff = new CeilingFanOffCommand(ceilingFan);
-  
-                remoteControl.setCommand(0, ceilingFanMedium, ceilingFanOff);
-                remoteControl.setCommand(1, ceilingFanHigh, ceilingFanOff);
-   
-                remoteControl.onButtonWasPushed(0);
-                remoteControl.offButtonWasPushed(0);
-                System.out.println(remoteControl);
-                remoteControl.undoButtonWasPushed();
-  
-                remoteControl.onButtonWasPushed(1);
-                System.out.println(remoteControl);
-                remoteControl.undoButtonWasPushed();
-        }
-}
-
-
-
-
-// 7.Write a Java Program to implement Adapter pattern for Enumeration iterator. 
-
-
-
-EnumerationIterator.java
-import java.util.*;
-// Enumeration interface is used to get elements from vector
-class EnumerationIterator implements Iterator {
-	Enumeration enumeration;
-
-	public EnumerationIterator(Enumeration enumeration) {
-		this.enumeration = enumeration;
-	}
-
-	public boolean hasNext() {
-		return enumeration.hasMoreElements();
-	}
-
-	public Object next() {
-		return enumeration.nextElement();
-	}
-
-	public void remove() {
-		throw new UnsupportedOperationException();
-	}
-}
-
-
-class EnumIterator {
-	public static void main (String args[]) {
-		Vector v = new Vector(Arrays.asList("JAVA","CPP","SQL","HTML"));
-		Iterator iterator = new EnumerationIterator(v.elements());
-		while (iterator.hasNext()) {
-			System.out.println(iterator.next());
-		}
-	}
-}
-
-IterEnum.java
-import java.util.*;
-public class IterEnum 
-{
-
-public static void main(String[] args)
-{
-    String[] wordArr = {"Book", "Number", "Place", "Lemon", "Apple", "Tree"};
-    Vector<String> wordList = new Vector<>(Arrays.asList (wordArr)); //directly convert array to vector
-    System.out.println("\nThe word list: \n"+wordList + "\n");
-    
-    Enumeration<String> vectorEnum = wordList.elements(); 
-    //Enumeration iterates through vector show elements one by one
-    while(vectorEnum.hasMoreElements()) 
-    { //when vector Enum has more element to get System.out.println(vectorEnum.nextElement());
-        System.out.println(vectorEnum.nextElement());
-    }
-
-    LinkedList<String> wordLinkedList = new LinkedList<>();
-    wordLinkedList.addAll(wordList); //add elements from vector to linked list add some additional items
-    wordLinkedList.add("Ball");
-    wordLinkedList.add("Mango");
-    wordLinkedList.remove("Book");
-    System.out.println("\nThe word list (LinkedList): \n" + wordLinkedList + "\n");
-
-    Iterator<String> it =wordLinkedList.iterator(); //the iterator it will point elements of the linked list
-    while(it.hasNext()) 
-    { //when vector Enum has more element to get    
-        System.out.println(it.next()); 
-    }
-}
-}
-
-
-
-
-// 8.Write a Java Program to implement Iterator Pattern for Designing Menu like Breakfast, Lunch or Dinner Menu.
-
-
-Menu.java
-import java.util.Iterator;
-
-public interface Menu {
-	public Iterator<MenuItem> createIterator();
-}
-
-CafeMenu.java
-import java.util.*;
-
-public class CafeMenu implements Menu {
-	HashMap<String, MenuItem> menuItems = new HashMap<String, MenuItem>();
-  
-	public CafeMenu() {
-		addItem("Veggie Burger and Air Fries",
-			"Veggie burger on a whole wheat bun, lettuce, tomato, and fries",
-			true, 3.99);
-		addItem("Soup of the day",
-			"A cup of the soup of the day, with a side salad",
-			false, 3.69);
-		addItem("Burrito",
-			"A large burrito, with whole pinto beans, salsa, guacamole",
-			true, 4.29);
-	}
- 
-	public void addItem(String name, String description, 
-	                     boolean vegetarian, double price) 
-	{
-		MenuItem menuItem = new MenuItem(name, description, vegetarian, price);
-		menuItems.put(name, menuItem);
-	}
- 
-	public Map<String, MenuItem> getItems() {
-		return menuItems;
-	}
-  
-	public Iterator<MenuItem> createIterator() {
-		return menuItems.values().iterator();
-	}
-}
-
-DinerMenu.java
-import java.util.Iterator;
-
-public class DinerMenu implements Menu {
-	static final int MAX_ITEMS = 6;
-	int numberOfItems = 0;
-	MenuItem[] menuItems;
-  
-	public DinerMenu() {
-		menuItems = new MenuItem[MAX_ITEMS];
- 
-		addItem("Vegetarian BLT",
-			"(Fakin') Bacon with lettuce & tomato on whole wheat", true, 2.99);
-		addItem("BLT",
-			"Bacon with lettuce & tomato on whole wheat", false, 2.99);
-		addItem("Soup of the day",
-			"Soup of the day, with a side of potato salad", false, 3.29);
-		addItem("Hotdog",
-			"A hot dog, with sauerkraut, relish, onions, topped with cheese",
-			false, 3.05);
-		addItem("Steamed Veggies and Brown Rice",
-			"A medly of steamed vegetables over brown rice", true, 3.99);
-		addItem("Pasta",
-			"Spaghetti with Marinara Sauce, and a slice of sourdough bread",
-			true, 3.89);
-	}
-  
-	public void addItem(String name, String description, 
-	                     boolean vegetarian, double price) 
-	{
-		MenuItem menuItem = new MenuItem(name, description, vegetarian, price);
-		if (numberOfItems >= MAX_ITEMS) {
-			System.err.println("Sorry, menu is full!  Can't add item to menu");
-		} else {
-			menuItems[numberOfItems] = menuItem;
-			numberOfItems = numberOfItems + 1;
-		}
-	}
- 
-	public MenuItem[] getMenuItems() {
-		return menuItems;
-	}
-  
-	public Iterator<MenuItem> createIterator() {
-		return new DinerMenuIterator(menuItems);
-		//return new AlternatingDinerMenuIterator(menuItems);
-	}
- 
-	// other menu methods here
-}
-
-DinerMenuIterator.java
-import java.util.Iterator;
-  
-public class DinerMenuIterator implements Iterator<MenuItem> {
-	MenuItem[] list;
-	int position = 0;
- 
-	public DinerMenuIterator(MenuItem[] list) {
-		this.list = list;
-	}
- 
-	public MenuItem next() {
-		MenuItem menuItem = list[position];
-		position = position + 1;
-		return menuItem;
-	}
- 
-	public boolean hasNext() {
-		if (position >= list.length || list[position] == null) {
-			return false;
-		} else {
-			return true;
-		}
-	}
-
-	public void remove() {
-		if (position <= 0) {
-			throw new IllegalStateException
-				("You can't remove an item until you've done at least one next()");
-		}
-		if (list[position-1] != null) {
-			for (int i = position-1; i < (list.length-1); i++) {
-				list[i] = list[i+1];
-			}
-			list[list.length-1] = null;
-		}
-	}
-}
-
-MenuItem.java
-public class MenuItem {
-	String name;
-	String description;
-	boolean vegetarian;
-	double price;
- 
-	public MenuItem(String name, 
-	                String description, 
-	                boolean vegetarian, 
-	                double price) 
-	{
-		this.name = name;
-		this.description = description;
-		this.vegetarian = vegetarian;
-		this.price = price;
-	}
-  
-	public String getName() {
-		return name;
-	}
-  
-	public String getDescription() {
-		return description;
-	}
-  
-	public double getPrice() {
-		return price;
-	}
-  
-	public boolean isVegetarian() {
-		return vegetarian;
-	}
-}
-
-PancakeHouseMenu.java
-import java.util.ArrayList;
-import java.util.Iterator;
-
-public class PancakeHouseMenu implements Menu {
-	ArrayList<MenuItem> menuItems;
- 
-	public PancakeHouseMenu() {
-		menuItems = new ArrayList<MenuItem>();
-    
-		addItem("K&B's Pancake Breakfast", 
-			"Pancakes with scrambled eggs and toast", 
-			true,
-			2.99);
- 
-		addItem("Regular Pancake Breakfast", 
-			"Pancakes with fried eggs, sausage", 
-			false,
-			2.99);
- 
-		addItem("Blueberry Pancakes",
-			"Pancakes made with fresh blueberries and blueberry syrup",
-			true,
-			3.49);
- 
-		addItem("Waffles",
-			"Waffles with your choice of blueberries or strawberries",
-			true,
-			3.59);
-	}
-
-	public void addItem(String name, String description,
-	                    boolean vegetarian, double price)
-	{
-		MenuItem menuItem = new MenuItem(name, description, vegetarian, price);
-		menuItems.add(menuItem);
-	}
- 
-	public ArrayList<MenuItem> getMenuItems() {
-		return menuItems;
-	}
-  
-	public Iterator<MenuItem> createIterator() {
-		return menuItems.iterator();
-	}
-  
-	// other menu methods here
-}
-
-Waitress.java
-import java.util.Iterator;
-  
-public class Waitress {
-	Menu pancakeHouseMenu;
-	Menu dinerMenu;
-	Menu cafeMenu;
- 
-	public Waitress(Menu pancakeHouseMenu, Menu dinerMenu, Menu cafeMenu) {
-		this.pancakeHouseMenu = pancakeHouseMenu;
-		this.dinerMenu = dinerMenu;
-		this.cafeMenu = cafeMenu;
-	}
- 
-	public void printMenu() {
-		Iterator<MenuItem> pancakeIterator = pancakeHouseMenu.createIterator();
-		Iterator<MenuItem> dinerIterator = dinerMenu.createIterator();
-		Iterator<MenuItem> cafeIterator = cafeMenu.createIterator();
-
-		System.out.println("MENU\n----\nBREAKFAST");
-		printMenu(pancakeIterator);
-		System.out.println("\nLUNCH");
-		printMenu(dinerIterator);
-		System.out.println("\nDINNER");
-		printMenu(cafeIterator);
-	}
- 
-	private void printMenu(Iterator<MenuItem> iterator) {
-		while (iterator.hasNext()) {
-			MenuItem menuItem = iterator.next();
-			System.out.print(menuItem.getName() + ", ");
-			System.out.print(menuItem.getPrice() + " -- ");
-			System.out.println(menuItem.getDescription());
-		}
-	}
- 
-	public void printVegetarianMenu() {
-		System.out.println("\nVEGETARIAN MENU\n---------------");
-		printVegetarianMenu(pancakeHouseMenu.createIterator());
-		printVegetarianMenu(dinerMenu.createIterator());
-		printVegetarianMenu(cafeMenu.createIterator());
-	}
- 
-	public boolean isItemVegetarian(String name) {
-		Iterator<MenuItem> pancakeIterator = pancakeHouseMenu.createIterator();
-		if (isVegetarian(name, pancakeIterator)) {
-			return true;
-		}
-		Iterator<MenuItem> dinerIterator = dinerMenu.createIterator();
-		if (isVegetarian(name, dinerIterator)) {
-			return true;
-		}
-		Iterator<MenuItem> cafeIterator = cafeMenu.createIterator();
-		if (isVegetarian(name, cafeIterator)) {
-			return true;
-		}
-		return false;
-	}
-
-
-	private void printVegetarianMenu(Iterator<MenuItem> iterator) {
-		while (iterator.hasNext()) {
-			MenuItem menuItem = iterator.next();
-			if (menuItem.isVegetarian()) {
-				System.out.print(menuItem.getName() + ", ");
-				System.out.print(menuItem.getPrice() + " -- ");
-				System.out.println(menuItem.getDescription());
-			}
-		}
-	}
-
-	private boolean isVegetarian(String name, Iterator<MenuItem> iterator) {
-		while (iterator.hasNext()) {
-			MenuItem menuItem = iterator.next();
-			if (menuItem.getName().equals(name)) {
-				if (menuItem.isVegetarian()) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-}
-
-MenuTestDrive.java
-public class MenuTestDrive {
-	public static void main(String args[]) {
-		PancakeHouseMenu pancakeHouseMenu = new PancakeHouseMenu();
-		DinerMenu dinerMenu = new DinerMenu();
-		CafeMenu cafeMenu = new CafeMenu();
- 
-		Waitress waitress = new Waitress(pancakeHouseMenu, dinerMenu, cafeMenu);
- 
-		waitress.printMenu();
-		waitress.printVegetarianMenu();
-
-		System.out.println("\nCustomer asks, is the Hotdog vegetarian?");
-		System.out.print("Waitress says: ");
-		if (waitress.isItemVegetarian("Hotdog")) {
-			System.out.println("Yes");
-		} else {
-			System.out.println("No");
-		}
-		System.out.println("\nCustomer asks, are the Waffles vegetarian?");
-		System.out.print("Waitress says: ");
-		if (waitress.isItemVegetarian("Waffles")) {
-			System.out.println("Yes");
-		} else {
-			System.out.println("No");
-		}
-	}
-}
-
-
-
-
-
-
-
-// 9.Write a Java Program to implement State Pattern for Gumball Machine. Create instance variable that holds current state from there, we just need to handle all actions, 
-//   behaviors and state transition that can happen. For actions we need to implement methods to insert a quarter, remove a quarter, turning the crank and display gumball. 
-
-
-
-State.java
-public interface State {
- 
-	public void insertQuarter();
-	public void ejectQuarter();
-	public void turnCrank();
-	public void dispense();
-	
-	public void refill();
-}
-
-NoQuarterState.java
-public class NoQuarterState implements State {
-    GumballMachine gumballMachine;
- 
-    public NoQuarterState(GumballMachine gumballMachine) {
-        this.gumballMachine = gumballMachine;
-    }
- 
-	public void insertQuarter() {
-		System.out.println("You inserted a quarter");
-		gumballMachine.setState(gumballMachine.getHasQuarterState());
-	}
- 
-	public void ejectQuarter() {
-		System.out.println("You haven't inserted a quarter");
-	}
- 
-	public void turnCrank() {
-		System.out.println("You turned, but there's no quarter");
-	 }
- 
-	public void dispense() {
-		System.out.println("You need to pay first");
-	} 
-	
-	public void refill() { }
- 
-	public String toString() {
-		return "waiting for quarter";
-	}
-}
-
-HasQuarterState.java
-public class HasQuarterState implements State {
-	GumballMachine gumballMachine;
- 
-	public HasQuarterState(GumballMachine gumballMachine) {
-		this.gumballMachine = gumballMachine;
-	}
-  
-	public void insertQuarter() {
-		System.out.println("You can't insert another quarter");
-	}
- 
-	public void ejectQuarter() {
-		System.out.println("Quarter returned");
-		gumballMachine.setState(gumballMachine.getNoQuarterState());
-	}
- 
-	public void turnCrank() {
-		System.out.println("You turned...");
-		gumballMachine.setState(gumballMachine.getSoldState());
-	}
-
-    public void dispense() {
-        System.out.println("No gumball dispensed");
-    }
-    
-    public void refill() { }
- 
-	public String toString() {
-		return "waiting for turn of crank";
-	}
-}
-
-SoldOutState.java
-public class SoldOutState implements State {
-    GumballMachine gumballMachine;
- 
-    public SoldOutState(GumballMachine gumballMachine) {
-        this.gumballMachine = gumballMachine;
-    }
- 
-	public void insertQuarter() {
-		System.out.println("You can't insert a quarter, the machine is sold out");
-	}
- 
-	public void ejectQuarter() {
-		System.out.println("You can't eject, you haven't inserted a quarter yet");
-	}
- 
-	public void turnCrank() {
-		System.out.println("You turned, but there are no gumballs");
-	}
- 
-	public void dispense() {
-		System.out.println("No gumball dispensed");
-	}
-	
-	public void refill() { 
-		gumballMachine.setState(gumballMachine.getNoQuarterState());
-	}
- 
-	public String toString() {
-		return "sold out";
-	}
-}
-
-SoldState.java
-public class SoldState implements State {
- 
-    GumballMachine gumballMachine;
- 
-    public SoldState(GumballMachine gumballMachine) {
-        this.gumballMachine = gumballMachine;
-    }
-       
-	public void insertQuarter() {
-		System.out.println("Please wait, we're already giving you a gumball");
-	}
- 
-	public void ejectQuarter() {
-		System.out.println("Sorry, you already turned the crank");
-	}
- 
-	public void turnCrank() {
-		System.out.println("Turning twice doesn't get you another gumball!");
-	}
- 
-	public void dispense() {
-		gumballMachine.releaseBall();
-		if (gumballMachine.getCount() > 0) {
-			gumballMachine.setState(gumballMachine.getNoQuarterState());
-		} else {
-			System.out.println("Oops, out of gumballs!");
-			gumballMachine.setState(gumballMachine.getSoldOutState());
-		}
-	}
-	
-	public void refill() { }
- 
-	public String toString() {
-		return "dispensing a gumball";
-	}
-}
-
-GumballMachine.java
-public class GumballMachine {
- 
-	State soldOutState;
-	State noQuarterState;
-	State hasQuarterState;
-	State soldState;
- 
-	State state;
-	int count = 0;
- 
-	public GumballMachine(int numberGumballs) {
-		soldOutState = new SoldOutState(this);
-		noQuarterState = new NoQuarterState(this);
-		hasQuarterState = new HasQuarterState(this);
-		soldState = new SoldState(this);
-
-		this.count = numberGumballs;
- 		if (numberGumballs > 0) {
-			state = noQuarterState;
-		} else {
-			state = soldOutState;
-		}
-	}
- 
-	public void insertQuarter() {
-		state.insertQuarter();
-	}
- 
-	public void ejectQuarter() {
-		state.ejectQuarter();
-	}
- 
-	public void turnCrank() {
-		state.turnCrank();
-		state.dispense();
-	}
- 
-	void releaseBall() {
-		System.out.println("A gumball comes rolling out the slot...");
-		if (count != 0) {
-			count = count - 1;
-		}
-	}
- 
-	int getCount() {
-		return count;
-	}
- 
-	void refill(int count) {
-		this.count += count;
-		System.out.println("The gumball machine was just refilled; it's new count is: " + this.count);
-		state.refill();
-	}
-
-	void setState(State state) {
-		this.state = state;
-	}
-    public State getState() {
-        return state;
-    }
-
-    public State getSoldOutState() {
-        return soldOutState;
-    }
-
-    public State getNoQuarterState() {
-        return noQuarterState;
-    }
-
-    public State getHasQuarterState() {
-        return hasQuarterState;
-    }
-
-    public State getSoldState() {
-        return soldState;
-    }
- 
-	public String toString() {
-		StringBuffer result = new StringBuffer();
-		result.append("\nMighty Gumball, Inc.");
-		result.append("\nJava-enabled Standing Gumball Model #2004");
-		result.append("\nInventory: " + count + " gumball");
-		if (count != 1) {
-			result.append("s");
-		}
-		result.append("\n");
-		result.append("Machine is " + state + "\n");
-		return result.toString();
-	}
-} 
-
-GumballMachineTestDrive.java
-public class GumballMachineTestDrive {
-
-	public static void main(String[] args) {
-		GumballMachine gumballMachine = new GumballMachine(2);
-
-		System.out.println(gumballMachine);
-
-		gumballMachine.insertQuarter();
-		gumballMachine.turnCrank();
-
-		System.out.println(gumballMachine);
-
-		gumballMachine.insertQuarter();
-		gumballMachine.turnCrank();
-		gumballMachine.insertQuarter();
-		gumballMachine.turnCrank();
-		
-		gumballMachine.refill(5);
-		gumballMachine.insertQuarter();
-		gumballMachine.turnCrank();
-
-		System.out.println(gumballMachine);
-	}
-}
+1) Create a multiple linear regression model for house price dataset divide dataset into train and test data
+   while giving it to model and predict prices of house.
 
+   import pandas as pd
+   import numpy as np
+   import matplotlib.pyplot as plt
+   from sklearn.linear_model import LinearRegression
+   from sklearn.model_selection import train_test_split
+   from sklearn.metrics import mean_absolute_error
 
+   data=pd.read_csv("house.csv")
+   print(data)
+
+   x=data[["bedrooms","sqft_living"]]
+   y=data.price
+
+   print(x)
+   print(y)
+
+
+   xtrain,xtest,ytrain,ytest=train_test_split(x,y,test_size=0.2)
+   print(xtrain)
+   print(xtest)
+   print(ytrain)
+   print(ytest)
+
+   lr=LinearRegression()
+   lr.fit(xtrain,ytrain)
+
+   print(lr.intercept_)
+   print(lr.coef_)
+
+   print(lr.predict([[2,1000]]))
+
+
+   ypred=lr.predict(xtest)
+   cm=mean_absolute_error(ytest,ypred)
+   print(cm)
+2) Use dataset crash.csv is an accident survivor’s dataset portal for USA hosted by data.gov. The dataset
+   contains passengers age and speed of vehicle (mph) at the time of impact and fate of passengers (1 for
+   survived and 0 for not survived) after a crash. use logistic regression to decide if the age and speed
+   can predict the survivability of the passengers.
+
+
+import pandas as pd
+data = pd.read_csv("crash.csv")
+x = data[['age', 'speed']]
+y = data['survived']
+print(x)
+print(y)
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
+from sklearn.linear_model import LogisticRegression
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f'Accuracy: {accuracy}')
+
+
+conf_matrix = confusion_matrix(y_test, y_pred)
+print('Confusion Matrix:')
+print(conf_matrix)
+class_report = classification_report(y_test, y_pred)
+print('Classification Report:')
+print(class_report)
+coefficients = model.coef_
+intercept = model.intercept_
+print(f'Coefficients: {coefficients}')
+print(f'Intercept: {intercept}')
+3) Fit the simple linear regression and polynomial linear regression models to Salary_positions.csv data.
+   Find which one is more accurately fitting to the given data. Also predict the salaries of level 11 and
+   level 12 employees
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+
+data=pd.read_csv("position_salaries.csv")
+print(data)
+
+x=data.iloc[:,1:2].values
+y=data.iloc[:,2].values
+
+print(x)
+print(y)
+
+from sklearn.model_selection import train_test_split
+xtrain,xtest,ytrain,ytest=train_test_split(x,y,test_size=0.25)
+
+lr=LinearRegression()
+lr.fit(xtrain,ytrain)
+ypred=lr.predict(xtest)
+
+plt.scatter(x,y,c="red")
+plt.plot(x,lr.predict(x),c="green")
+plt.show()
+
+from sklearn.preprocessing import PolynomialFeatures
+pr=PolynomialFeatures(degree=4)
+xpoly=pr.fit_transform(x)
+poreg=LinearRegression()
+poreg.fit(xpoly,y)
+
+plt.scatter(x,y,c="red")
+plt.plot(x,poreg.predict(pr.fit_transform(x)),c="green")
+plt.show()
+
+
+print(lr.predict([[11]]))
+print(poreg.predict(pr.fit_transform([[11]])))
+
+print(lr.predict([[12]]))
+print(poreg.predict(pr.fit_transform([[12]])))
+4) Implement Ridge Regression, Lasso regression, ElasticNet model usingboston_houses.csv and take
+   only ‘RM’ and ‘Price’ of the houses. divide the data as training and testing data. Fit line using Ridge
+   regression and to find price of a house if it contains 5 rooms. and compare results.
+
+
+import pandas as pd
+data = pd.read_csv('boston_houses.csv')
+data = data[['rm', 'price']]
+
+
+X = data[['rm']]
+y = data['price']
+
+
+from sklearn.model_selection import train_test_split
+
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.7)
+
+
+from sklearn.linear_model import Ridge
+ridge_model = Ridge(alpha=1.0)
+ridge_model.fit(X_train, y_train)
+price_5_rooms_ridge = ridge_model.predict([[5]])
+print(" ridge Price for a house with 5 rooms:=>",price_5_rooms_ridge)
+
+
+from sklearn.linear_model import Lasso
+lasso_model = Lasso(alpha=0.1)
+lasso_model.fit(X_train, y_train)
+price_5_rooms_lasso = lasso_model.predict([[5]])
+print("lasso Price for a house with 5 rooms: =>",price_5_rooms_lasso)
+
+
+from sklearn.linear_model import ElasticNet
+elasticnet_model = ElasticNet(alpha=1.0, l1_ratio=0.5)
+elasticnet_model.fit(X_train, y_train)
+price_5_rooms_elasticnet = elasticnet_model.predict([[5]])
+print("ElasticNet Regression - Price for a house with 5 rooms: =>",price_5_rooms_elasticnet)
+5) Write a python program to Implement Decision Tree classifier model onData which is extracted from
+   images that were taken from genuine and forged banknote-like specimens.
+
+            (refer UCI dataset https://archive.ics.uci.edu/dataset/267/banknote+authentication)
+
+
+
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+
+data = pd.read_csv('banknote_data.csv')
+
+x = data[['variance', 'skewness', 'kurtosis', 'entropy']]
+y = data['class']
+
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
+dt_classifier = DecisionTreeClassifier(random_state=42)
+
+dt_classifier.fit(X_train, y_train)
+
+y_pred = dt_classifier.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy * 100:.2f}%\n")
+
+print("Confusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+from sklearn.tree import export_text
+
+tree_rules = export_text(dt_classifier, feature_names=list(X.columns))
+print("\nDecision Tree Rules:\n")
+print(tree_rules)
+6) Classify the iris flowers dataset using SVM and find out the flower type depending on the given input
+   data like sepal length, sepal width, petal length and petal width Find accuracy of all SVM kernels.
+
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+import numpy as np
+data = pd.read_csv("iris.csv")
+X = data[["SepalLengthCm","SepalWidthCm","PetalLengthCm","PetalWidthCm"]]
+y = data["Species"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+kernels = ['linear', 'poly', 'rbf', 'sigmoid']
+
+for kernel in kernels:
+
+  model = SVC(kernel=kernel)
+
+  model.fit(X_train, y_train)
+
+  y_pred = model.predict(X_test)
+
+  accuracy = accuracy_score(y_test, y_pred)
+  print(f"Kernel: {kernel}")
+  print(f"Accuracy: {accuracy:.4f}")
+  print(classification_report(y_test, y_pred))
+model=SVC(kernel="rbf")
+model.fit(X_train,y_train)
+flower_type=model.predict(scaler.fit_transform([[5.1, 3.5, 1.4, 0.2]]))
+print(f"The predicted flower type is: {flower_type}")
+7) Create KNN model on Indian diabetes patient’s database and predict whether a new patient is diabetic
+   (1) or not (0). Find optimal value of K.
+
+   import pandas as pd
+   import numpy as np
+   from sklearn.model_selection import train_test_split, cross_val_score
+   from sklearn.neighbors import KNeighborsClassifier
+   from sklearn.preprocessing import StandardScaler
+   from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+   import matplotlib.pyplot as plt
+   data = pd.read_csv('diabetes.csv')
+   print("Dataset Sample:")
+   print(data.head())
+   X = data.drop(columns=['Outcome']) # Features
+   y = data['Outcome']            # Target variable (1 = Diabetic, 0 = Non-diabetic)
+   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+   scaler = StandardScaler()
+   X_train = scaler.fit_transform(X_train)
+   X_test = scaler.transform(X_test)
+   k_range = range(1, 26)
+   cv_scores = [] # Store accuracy for each value of k
+
+   for k in k_range:
+      knn = KNeighborsClassifier(n_neighbors=k)
+      scores = cross_val_score(knn, X_train, y_train, cv=10, scoring='accuracy')
+      cv_scores.append(scores.mean())
+   plt.plot(k_range, cv_scores)
+   plt.xlabel('Number of Neighbors (k)')
+   plt.ylabel('Cross-Validated Accuracy')
+   plt.title('Finding Optimal k')
+   plt.show()
+   optimal_k = k_range[np.argmax(cv_scores)]
+   print(f"The optimal number of neighbors is {optimal_k}”)
+
+   knn_optimal = KNeighborsClassifier(n_neighbors=optimal_k)
+   knn_optimal.fit(X_train, y_train)
+   y_pred = knn_optimal.predict(X_test)
+   accuracy = accuracy_score(y_test, y_pred)
+   print(f"Model Accuracy on Test Set: {accuracy * 100:.2f}%")
+   print("\nClassification Report:")
+   print(classification_report(y_test, y_pred))
+   print("\nConfusion Matrix:")
+   print(confusion_matrix(y_test, y_pred))
+8) Take iris flower dataset and reduce 4D data to 2D data using PCA. Then train the model and predict
+   new flower with given measurements.
+
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.decomposition import PCA
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+
+data=pd.read_csv("iris.csv")
+x = data[["SepalLengthCm","SepalWidthCm","PetalLengthCm","PetalWidthCm"]]
+y = data["Species"]
+
+pca = PCA(n_components=2)
+X_reduced = pca.fit_transform(x)
+
+X_train, X_test, y_train, y_test = train_test_split(X_reduced, y, test_size=0.2, random_state=42)
+
+knn = KNeighborsClassifier(n_neighbors=5)
+knn.fit(X_train, y_train)
+
+y_pred = knn.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred)
+print(f'KNN Model Accuracy: {accuracy * 100:.2f}%')
+
+new_flower = [[5.9, 3.0, 5.1, 1.8]]
+
+new_flower_reduced = pca.transform(new_flower)
+
+predicted_class = knn.predict(new_flower_reduced)
+print(predicted_class)
+9) Use K-means clustering model and classify the employees into various income groups or clusters.
+   Preprocess data if require (i.e. drop missing or null values). Use elbow method and Silhouette Score
+   to find value of k.
+
+
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+df = pd.read_csv('employee_data.csv')
+df.dropna(inplace=True)
+data = df[['Age', 'Experience', 'Income']]
+scaler = StandardScaler()
+scaled_data = scaler.fit_transform(data)
+inertia = []
+for k in range(1, 11):
+   kmeans = KMeans(n_clusters=k, random_state=42)
+   kmeans.fit(scaled_data)
+   inertia.append(kmeans.inertia_)
+plt.figure(figsize=(8, 5))
+plt.plot(range(1, 11), inertia, marker='o')
+plt.xlabel('Number of Clusters (k)')
+plt.ylabel('Inertia (Sum of Squared Distances)')
+plt.title('Elbow Method for Optimal k')
+plt.show()
+silhouette_scores = []
+for k in range(2, 11): # Silhouette score is not defined for k=1
+   kmeans = KMeans(n_clusters=k, random_state=42)
+   cluster_labels = kmeans.fit_predict(scaled_data)
+   silhouette_scores.append(silhouette_score(scaled_data, cluster_labels))
+plt.figure(figsize=(8, 5))
+plt.plot(range(2, 11), silhouette_scores, marker='o', color='r')
+plt.xlabel('Number of Clusters (k)')
+plt.ylabel('Silhouette Score')
+plt.title('Silhouette Score for Different k Values')
+plt.show()
+optimal_k = 3
+kmeans = KMeans(n_clusters=optimal_k, random_state=42)
+df['Cluster'] = kmeans.fit_predict(scaled_data)
+plt.figure(figsize=(8, 5))
+sns.scatterplot(data=df, x='Income', y='Experience', hue='Cluster', palette='Set1', s=100)
+plt.title('Employee Clusters Based on Income and Experience')
+plt.show()
+cluster_centers = scaler.inverse_transform(kmeans.cluster_centers_)
+print("Cluster Centers:\n", cluster_centers)
+10) The data set refers to clients of a wholesale distributor. It includes the annual spending in monetary
+    units on diverse product categories. Using data Wholesale customer dataset compute agglomerative
+    clustering     to     find    out     annual    spending        clients   in    the    same    region.
+    https://archive.ics.uci.edu/dataset/292/wholesale+customers
+
+   import pandas as pd
+   from sklearn.preprocessing import StandardScaler
+   from sklearn.cluster import AgglomerativeClustering
+   import scipy.cluster.hierarchy as sch
+   import matplotlib.pyplot as plt
+
+   data = pd.read_csv('wholesale.csv')
+
+   X = data.drop(['Region', 'Channel'], axis=1)
+
+   scaler = StandardScaler()
+   X_scaled = scaler.fit_transform(X)
+
+   agg_clustering = AgglomerativeClustering(n_clusters=3, linkage='ward')
+
+   clusters = agg_clustering.fit_predict(X_scaled)
+
+   data['Cluster'] = clusters
+   print(data)
+
+   dendrogram = sch.dendrogram(sch.linkage(X_scaled, method='ward'))
+   plt.title('Dendrogram')
+   plt.xlabel('Customers')
+   plt.ylabel('Euclidean Distances')
+   plt.show()
+
+   print(data['Cluster'].value_counts())
+
+   cluster_summary = data.groupby('Cluster').mean()
+   print(cluster_summary)
+11) Use Apriori algorithm on groceries dataset to find which items are brought together. Use minimum
+    support =0.25
+
+   import pandas as pd
+   from mlxtend.preprocessing import TransactionEncoder
+   from mlxtend.frequent_patterns import apriori, association_rules
+   groceries = [
+      ['milk', 'bread', 'eggs'],
+      ['milk', 'bread'],
+      ['milk', 'butter', 'bread'],
+      ['bread', 'eggs'],
+      ['butter', 'eggs']
+   ]
+
+   te = TransactionEncoder()
+   te_ary = te.fit(groceries).transform(groceries)
+   df = pd.DataFrame(te_ary, columns=te.columns_)
+
+   print("Binary Matrix of Transactions:")
+   print(df)
+
+
+   frequent_itemsets = apriori(df, min_support=0.25, use_colnames=True)
+
+   print("\nFrequent Itemsets:")
+   print(frequent_itemsets)
+
+   rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.5)
+
+   print("\nAssociation Rules:")
+   print(rules[['antecedents', 'consequents', 'support', 'confidence']])
+12) Create a two layered neural network with relu and sigmoid activation function.
+
+
+import numpy as np
+
+np.random.seed(42)
+
+X = np.array([[0.1, 0.2, 0.3],
+
+         [0.4, 0.5, 0.6]])
+
+n_input = 2
+
+n_hidden = 4
+
+n_output = 1
+
+W1 = np.random.randn(n_hidden, n_input) * 0.01
+
+b1 = np.zeros((n_hidden, 1))
+
+W2 = np.random.randn(n_output, n_hidden) * 0.01
+
+b2 = np.zeros((n_output, 1))
+
+Z1 = np.dot(W1, X) + b1 # Linear transformation
+
+A1 = np.maximum(0, Z1) # ReLU activation
+
+Z2 = np.dot(W2, A1) + b2 # Linear transformation
+
+A2 = 1 / (1 + np.exp(-Z2)) # Sigmoid activation
+
+print("Network Output:\n", A2)
+13) Create an ANN and train it on house price dataset classify the house price is above average or below
+    average.
+
+import numpy as np
+import pandas as pd
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+data = fetch_california_housing()
+X = data.data # Features
+y = data.target # Target (house prices)
+average_price = np.mean(y)
+y_binary = np.where(y > average_price, 1, 0)
+X_train, X_test, y_train, y_test = train_test_split(X, y_binary, test_size=0.2, random_state=42)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+model = Sequential()
+model.add(Dense(16, input_shape=(X_train.shape[1],), activation='relu'))
+model.add(Dense(8, activation='relu'))
+model.add(Dense(1, activation='sigmoid'))
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+history = model.fit(X_train, y_train, epochs=50, batch_size=32, validation_split=0.2, verbose=1)
+test_loss, test_accuracy = model.evaluate(X_test, y_test, verbose=1)
+print(f"\nTest Accuracy: {test_accuracy * 100:.2f}%")
+y_pred = model.predict(X_test) > 0.5
+print("\nSample Predictions:")
+for i in range(5):
+  print(f"Predicted: {'Above Average' if y_pred[i] else 'Below Average'}, Actual: {'Above Average' if
+y_test[i] else 'Below Average'}")
+14) Create a CNN model and train it on mnist handwritten digit dataset. Using model find out the digit
+    written by a hand in a given image. Import mnist dataset from tensorflow.keras.datasets
+
+import numpy as np
+
+import matplotlib.pyplot as plt
+
+from tensorflow.keras.datasets import mnist
+
+from tensorflow.keras.models import Sequential
+
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
+
+from tensorflow.keras.utils import to_categorical
+
+from tensorflow.keras.preprocessing import image
+
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+X_train = X_train.reshape(-1, 28, 28, 1).astype('float32') / 255.0
+
+X_test = X_test.reshape(-1, 28, 28, 1).astype('float32') / 255.0
+
+y_train = to_categorical(y_train, 10)
+
+y_test = to_categorical(y_test, 10)
+
+model = Sequential([Conv2D(32, kernel_size=(3,3), activation='relu', input_shape=(28,28,1)),
+
+  MaxPooling2D(pool_size=(2,2)), Conv2D(64, kernel_size=(3,3), activation='relu'),
+
+  MaxPooling2D(pool_size=(2,2)),Flatten(), Dense(128, activation='relu'),
+
+  Dense(10, activation='softmax')])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=5, batch_size=128)
+
+loss, accuracy = model.evaluate(X_test, y_test)
+
+print(f"Test Accuracy: {accuracy * 100:.2f}%")
+
+sample_image = X_test[0].reshape(1,28,28,1) # Reshape to match input shape
+
+predicted_class = np.argmax(model.predict(sample_image))
+
+print(f"Predicted digit: {predicted_class}")
+15) Write a python program to find all null values in a given data set and remove them.
+
+import pandas as pd
+import numpy as np
+
+data=pd.read_csv("ass2_data.csv")
+print(data)
+
+print(data.isnull())
+
+print(data.notnull())
+
+data1=data.dropna(axis=0,how="any")
+print(data1)
+
+data["m1"]=data["m1"].replace(np.NaN,data["m1"].mean())
+data["m2"]=data["m2"].replace(np.NaN,data["m2"].mean())
+data["m3"]=data["m3"].replace(np.NaN,data["m3"].mean())
+print(data)
+16) Write a python program the Categorical values in numeric format for a given dataset.
+
+import pandas as pd
+import numpy as np
+
+data=pd.read_csv("ass3_data.csv")
+print(data)
+
+x=data.iloc[:,0:1].values
+print(x)
+
+from sklearn.preprocessing import LabelEncoder
+le=LabelEncoder()
+x1=le.fit_transform(x)
+print(x1)
+
+from sklearn.preprocessing import OneHotEncoder
+ohe=OneHotEncoder()
+xn=ohe.fit_transform(x).toarray()
+print(xn)
+
